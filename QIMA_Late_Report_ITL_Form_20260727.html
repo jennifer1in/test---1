@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QIMA MEX PEO — Late Report ITL Form</title>
+<style>
+  :root {
+    --qima-blue: #003087;
+    --qima-light: #B4C6E7;
+    --orange: #FFC000;
+    --yellow: #FFFF00;
+    --green: #92D050;
+    --grey: #f5f6fa;
+    --border: #d0d7e3;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; background: #eef1f7; color: #222; }
+  header {
+    background: var(--qima-blue); color: #fff; padding: 16px 32px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  header .logo { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+  header .title { font-size: 15px; opacity: .85; }
+  header .date-badge {
+    margin-left: auto; background: rgba(255,255,255,.15);
+    border-radius: 6px; padding: 4px 12px; font-size: 12px;
+  }
+  .container { max-width: 1400px; margin: 24px auto; padding: 0 20px; }
+  .instructions {
+    background: #fff; border-left: 4px solid var(--qima-blue);
+    padding: 12px 18px; border-radius: 6px; margin-bottom: 20px;
+    font-size: 12.5px; line-height: 1.7; color: #444;
+  }
+  .instructions b { color: var(--qima-blue); }
+  .filter-bar {
+    display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+  }
+  .filter-bar select, .filter-bar input {
+    border: 1px solid var(--border); border-radius: 5px;
+    padding: 5px 10px; font-size: 12px; background: #fff;
+  }
+  .filter-bar label { font-size: 12px; color: #555; }
+  .btn {
+    padding: 7px 18px; border-radius: 5px; border: none;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--qima-blue); color: #fff; }
+  .btn-success { background: #28a745; color: #fff; }
+  .btn-outline { background: #fff; color: var(--qima-blue); border: 1.5px solid var(--qima-blue); }
+  .progress-bar {
+    background: #e0e6ef; border-radius: 8px; height: 10px; margin-bottom: 20px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--qima-blue); border-radius: 8px;
+    transition: width .3s; width: 0%;
+  }
+  .progress-label { font-size: 11.5px; color: #666; margin-bottom: 6px; }
+  table {
+    width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 1px 6px rgba(0,0,0,.08);
+  }
+  th {
+    background: var(--qima-blue); color: #fff; padding: 9px 10px;
+    text-align: left; font-size: 12px; white-space: nowrap; position: sticky; top: 0; z-index: 10;
+  }
+  td { padding: 7px 10px; border-bottom: 1px solid #edf0f5; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f0f4fc; }
+  tr.filled td { background: #f0fff4 !important; }
+  .days-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-weight: 700; font-size: 12px;
+  }
+  .days-orange { background: var(--orange); color: #333; }
+  .days-yellow { background: var(--yellow); color: #333; }
+  .days-white { background: #eee; color: #555; }
+  .status-dot {
+    display: inline-block; width: 9px; height: 9px;
+    border-radius: 50%; margin-right: 5px;
+  }
+  .dot-pending { background: #bbb; }
+  .dot-filled { background: #28a745; }
+  select.reason-sel, input.comment-inp, input.responsible-inp {
+    width: 100%; border: 1px solid var(--border); border-radius: 4px;
+    padding: 4px 7px; font-size: 12px; background: #fff;
+  }
+  select.reason-sel:focus, input.comment-inp:focus, input.responsible-inp:focus {
+    outline: 2px solid var(--qima-blue); border-color: transparent;
+  }
+  input.responsible-inp[readonly] {
+    background: #f3f5f8;
+    color: #444;
+    cursor: not-allowed;
+    font-weight: 600;
+  }
+  .summary-panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--qima-blue); color: #fff;
+    padding: 12px 32px; display: flex; align-items: center; gap: 20px;
+    box-shadow: 0 -4px 16px rgba(0,0,0,.15); z-index: 100;
+  }
+  .summary-panel .stat { text-align: center; }
+  .summary-panel .stat .num { font-size: 22px; font-weight: 700; }
+  .summary-panel .stat .lbl { font-size: 11px; opacity: .75; }
+  .summary-panel .actions { margin-left: auto; display: flex; gap: 10px; }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 200; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 10px; padding: 28px 32px;
+    max-width: 820px; width: 95%; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 8px 40px rgba(0,0,0,.2);
+  }
+  .modal h3 { color: var(--qima-blue); margin-bottom: 16px; font-size: 16px; }
+  .email-preview {
+    background: #f7f9fc; border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px; font-size: 12px; white-space: pre-wrap; line-height: 1.6;
+    max-height: 340px; overflow-y: auto; font-family: 'Courier New', monospace;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+  .copied-toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    background: #28a745; color: #fff; padding: 10px 24px; border-radius: 20px;
+    font-size: 13px; display: none; z-index: 300; font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  }
+  .hint { font-size: 11px; color: #777; margin-top: 8px; }
+  @media (max-width: 768px) {
+    .container { padding: 0 8px; }
+    .filter-bar { flex-direction: column; align-items: stretch; }
+    th, td { font-size: 11px; padding: 5px 7px; }
+    .summary-panel { flex-wrap: wrap; padding: 10px 16px; }
+    .summary-panel .actions { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">QIMA</div>
+  <div class="title">MEX PEO Service — Late Report Update Form</div>
+  <div class="date-badge" id="headerDate"></div>
+</header>
+
+<div class="container">
+
+  <div class="instructions">
+    <b>填写说明：</b>请为订单选择原因，找不到相关的原因，请选择 other，并在备注 / comment 里写明详细原因。
+    <br>
+    <b>Instructions:</b> Please select the delay reason for each order. If no matching option, choose "Other" and fill in detailed explanation in the comment box.
+  </div>
+
+  <div class="filter-bar">
+    <label>筛选 / Filter:</label>
+    <select id="filterOffice" onchange="applyFilters()">
+      <option value="">All Offices</option>
+    </select>
+    <select id="filterStatus" onchange="applyFilters()">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="filled">Filled</option>
+    </select>
+    <select id="filterDays" onchange="applyFilters()">
+      <option value="">All Days</option>
+      <option value="orange">≥7 days</option>
+      <option value="yellow">3-6 days</option>
+      <option value="white">0-2 days</option>
+    </select>
+    <input type="text" id="searchBox" placeholder="Search order / client..." oninput="applyFilters()" style="min-width:180px">
+  </div>
+
+  <div class="progress-label" id="progressLabel">0 / 0 orders filled</div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div style="overflow-x:auto; margin-bottom: 90px;">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th style="width:28px">#</th>
+          <th>QIMA Ref.</th>
+          <th>Client</th>
+          <th>Last Day</th>
+          <th>Days</th>
+          <th>Inspector(s)</th>
+          <th>Office</th>
+          <th style="min-width:340px">原因 / Reason <span style="font-weight:300;font-size:10px">(required)</span></th>
+          <th style="min-width:220px">备注 / Comment</th>
+          <th style="min-width:180px">责任方 / Responsible</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="summary-panel">
+  <div class="stat"><div class="num" id="statTotal">0</div><div class="lbl">Total Orders</div></div>
+  <div class="stat"><div class="num" id="statFilled">0</div><div class="lbl">Filled</div></div>
+  <div class="stat"><div class="num" id="statPending">0</div><div class="lbl">Pending</div></div>
+  <div class="stat"><div class="num" id="statOrange" style="color:#FFC000">0</div><div class="lbl">≥7 Days</div></div>
+  <div class="actions">
+    <button class="btn btn-outline" onclick="saveDraft()">💾 Save Draft</button>
+    <button class="btn btn-success" onclick="openSubmitModal()">✉️ Submit → Generate Draft Email</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <h3>📧 Draft Email Preview</h3>
+    <p style="font-size:12px;color:#666;margin-bottom:12px">
+      The content below is generated from the currently filled rows. You can copy it and paste into Outlook/email.
+    </p>
+    <div class="email-preview" id="emailPreview"></div>
+    <div class="hint">提示：这个版本是本地 HTML，不能直接在 Outlook 自动创建草稿，但可以复制内容后手动发送。</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="copyEmail()">📋 Copy Email Content</button>
+      <button class="btn btn-success" onclick="downloadFilledJson()">⬇️ Export Filled Data</button>
+    </div>
+  </div>
+</div>
+
+<div class="copied-toast" id="copiedToast">✓ Copied to clipboard!</div>
+
+<script>
+const REASON_OPTIONS = [
+  "",
+  "waiting for IP update to re-submit the report / 等待IP 更新后重新提交报告",
+  "waiting for final PL / 等待最终装箱单",
+  "Waiting for final PL and booking update / 等待最终装箱单和 booking更新",
+  "Waiting for booking update / 等待 booking更新",
+  "Waiting for seal picture, need support from PM / 等待封条照片，需要 PM 协助",
+  "The container still not loding yet, pls change the last day of inspection / 集装箱还未开始装货，请更改最终验货日期",
+  "The order will be cancelled, pls change the status / 订单将被取消，请更改状态",
+  "Waiting for AM to update booking / 等待 AM更新 booking 信息",
+  "Waiting for AM to confirm how to submit the report / 等待AM确认如何提交报告",
+  "the booking was updated today, will finish tomorrow / booking信息今天已更新,将于明天完成",
+  "the final PL received this morning, will finish tomorrow / 今天上午已收到最终装箱单，将于明天完成",
+  "the pictures were provided by supplier today, will finish today / 供应商今天已提供照片，今天完成",
+  "one report was not submitted successfully, will submit again today / 有一份报告未能成功提交，今天会重新提交",
+  "will finish today/tomorrow / 今天/明天完成",
+  "too many report, will finish tomorrow / 报告太多，将于明天完成",
+  "The inspector OT yesterday, will finsh today / 验货员昨天加班了，今天完成",
+  "Other / 其他"
+];
+
+const RESPONSIBLE_MAP = {
+  "waiting for IP update to re-submit the report / 等待IP 更新后重新提交报告": "PM",
+  "waiting for final PL / 等待最终装箱单": "PM",
+  "Waiting for final PL and booking update / 等待最终装箱单和 booking更新": "PM",
+  "Waiting for booking update / 等待 booking更新": "PM",
+  "Waiting for seal picture, need support from PM / 等待封条照片，需要 PM 协助": "PM",
+  "The container still not loding yet, pls change the last day of inspection / 集装箱还未开始装货，请更改最终验货日期": "PM",
+  "The order will be cancelled, pls change the status / 订单将被取消，请更改状态": "PM",
+
+  "Waiting for AM to update booking / 等待 AM更新 booking 信息": "AM",
+  "Waiting for AM to confirm how to submit the report / 等待AM确认如何提交报告": "AM",
+
+  "the booking was updated today, will finish tomorrow / booking信息今天已更新,将于明天完成": "PM/Inspector",
+  "the final PL received this morning, will finish tomorrow / 今天上午已收到最终装箱单，将于明天完成": "PM/Inspector",
+  "the pictures were provided by supplier today, will finish today / 供应商今天已提供照片，今天完成": "PM/Inspector",
+
+  "one report was not submitted successfully, will submit again today / 有一份报告未能成功提交，今天会重新提交": "IT",
+
+  "will finish today/tomorrow / 今天/明天完成": "Inspector",
+  "too many report, will finish tomorrow / 报告太多，将于明天完成": "Inspector",
+  "The inspector OT yesterday, will finsh today / 验货员昨天加班了，今天完成": "Inspector",
+
+  "Other / 其他": ""
+};
+
+const ORDERS = [
+  { ref: "Q2616427684", client: "CTS MEX-ZHONGJIAOJIAN", lastDay: "10-Jul-26", days: 18, inspectors: "Lila Chen;Fuqiang Chen;Zhuoxian Lu;Stanley Huang;Cansheng Chen;Well Cheng;Weirui Li", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2615887947-4", client: "Walmart-Zhejiang Vinea Cosmetic Co., Ltd", lastDay: "22-Jul-26", days: 6, inspectors: "Yong Chen", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2615101886", client: "BIJOU MEXICO", lastDay: "23-Jul-26", days: 5, inspectors: "Evan Wang", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617290666", client: "Nexus Vindao Sa De Cv", lastDay: "23-Jul-26", days: 5, inspectors: "Vivian Wei", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617452042-1", client: "Walmart - ALL COURTESY INTERNATIONAL LIMITED", lastDay: "23-Jul-26", days: 5, inspectors: "Cheng Zhang;Eno Zhao", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617683858", client: "Coppel Traffic (Footwear)", lastDay: "23-Jul-26", days: 5, inspectors: "", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617853156", client: "Xuzhou But International Trade Co., Ltd", lastDay: "23-Jul-26", days: 5, inspectors: "Ziheng Li", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617894817", client: "STIAS - LONGSAIL SUPPLY CHAIN CO., LTD.", lastDay: "23-Jul-26", days: 5, inspectors: "Qinglong Zhou;Byron Lu;Qinghua Zheng;Philip Chen", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616812738", client: "BIJOU MEXICO", lastDay: "24-Jul-26", days: 4, inspectors: "Lila Chen;Hanzheng Liang;Simba Wang", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617564257", client: "Volca Llc", lastDay: "24-Jul-26", days: 4, inspectors: "Jiewen Guo;Weirui Li;Tian Tian;Weifeng Liang;Timon Li", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617853478", client: "Xuzhou But International Trade Co., Ltd", lastDay: "24-Jul-26", days: 4, inspectors: "Quanchao Dou;Yi Lu;Ning Shao", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617893642", client: "IBALMA WECARE - SHANGHAI HUANNA INDUSTRY AND TRADE CO LTD", lastDay: "24-Jul-26", days: 4, inspectors: "Xing Chen", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617971592", client: "Guadalajara - EXPEDITORS INTERNATIONAL DE MEXICO", lastDay: "24-Jul-26", days: 4, inspectors: "Eddie Liu", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618116103", client: "PLUSCARGO TRANSPORTE MEXICANA S.A. DE C.V. (Fine Line S.A.)", lastDay: "24-Jul-26", days: 4, inspectors: "Xiaoying Wang;Brandon Xu", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618140337", client: "Logistica Loger S.A De C.V.-TCL", lastDay: "24-Jul-26", days: 4, inspectors: "Weiqiang Guan;Evan Wang", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618146912", client: "Suzhou Etron Technologies Co., Ltd", lastDay: "24-Jul-26", days: 4, inspectors: "George Wu", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2608133507", client: "ONOFF", lastDay: "25-Jul-26", days: 3, inspectors: "Guanglu Li", office: "Beijing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616247717", client: "Coppel Traffic (General)", lastDay: "25-Jul-26", days: 3, inspectors: "Fan Li", office: "Qingdao office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617297816", client: "Crossmotion Logistics S.A. de C.V.", lastDay: "25-Jul-26", days: 3, inspectors: "Tengfei Qie", office: "Beijing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617778355", client: "Grupo Acopol", lastDay: "25-Jul-26", days: 3, inspectors: "Wei Xue", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618114337", client: "Xuzhou But International Trade Co., Ltd", lastDay: "25-Jul-26", days: 3, inspectors: "Ning Shao", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618185159", client: "Logistica Loger S.A De C.V.-TCL", lastDay: "25-Jul-26", days: 3, inspectors: "Vicky Liu", office: "Guangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618273698", client: "ACS - FRACHT - SHANGHAI SEAINE INTELLIGENT SYSTEM CO.,LTD", lastDay: "25-Jul-26", days: 3, inspectors: "Junyan Liu", office: "Beijing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2613010744", client: "TRAMITES Y LOGISTICA EN COMERCIO EXTERIOR", lastDay: "26-Jul-26", days: 2, inspectors: "Jared Hu", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2615887947", client: "Walmart-Zhejiang Vinea Cosmetic Co., Ltd", lastDay: "26-Jul-26", days: 2, inspectors: "Yong Chen", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616117067", client: "BODESA", lastDay: "26-Jul-26", days: 2, inspectors: "Shikui Han;Carr Hu", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617678090", client: "Corporativo Aduanal Robles, S.C.", lastDay: "26-Jul-26", days: 2, inspectors: "Shengya Xie;Ben Zheng", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617868305", client: "Rogil Worldwide Cargo Sa De Cv", lastDay: "26-Jul-26", days: 2, inspectors: "Jiasheng Wang", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618418509", client: "Walmart - HOME-DOLLAR", lastDay: "26-Jul-26", days: 2, inspectors: "Li Gou;Jackson Liu", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2614849869", client: "Grupo Dao", lastDay: "27-Jul-26", days: 1, inspectors: "Zhiyuan Gao;Vivian Wei;haiyan shen", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616122890", client: "Coppel Traffic (Footwear)", lastDay: "27-Jul-26", days: 1, inspectors: "Haotong Gao", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616564082", client: "COMITOR - Fabricantes De Equipos Para Refrigeración S.A. De C.V.", lastDay: "27-Jul-26", days: 1, inspectors: "Jiewen Guo", office: "Guangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616695415", client: "Tic Tac Logistics Mexico", lastDay: "27-Jul-26", days: 1, inspectors: "Ash He;Tom Xu;Jianjun Ren", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616703577", client: "BODESA", lastDay: "27-Jul-26", days: 1, inspectors: "Jay Yu", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2616951065", client: "Tiba Mexico", lastDay: "27-Jul-26", days: 1, inspectors: "Brandon Xu", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617044857", client: "AUTOZONE 52 MEX - RB DISTRIBUTION, INC.//Zhejiang Ruitai Suspension System", lastDay: "27-Jul-26", days: 1, inspectors: "Xuan Wang;Anna Dai;Yangyang Wang", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617045117", client: "AUTOZONE 57 MEX -RB DISTRIBUTION, INC./Zhejiang Ruitai Suspension System Technology", lastDay: "27-Jul-26", days: 1, inspectors: "Jiajie Shan;Yangyang Wang", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617057038", client: "Walmart - NINGBO GUANYI INTERNATIONAL TRADE CO.,LTD.", lastDay: "27-Jul-26", days: 1, inspectors: "Tom Yu;David Lian", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617065525-1", client: "Walmart-MIDEA ELECTRIC TRADING SINGAPORE CO PTE LTD", lastDay: "27-Jul-26", days: 1, inspectors: "", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617317634", client: "LATIN AIR SEA WORLDWIDE - VISION LUX TECHOLOGY CO., LIMITED", lastDay: "27-Jul-26", days: 1, inspectors: "Chang Liu;Xuelin Zan", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617365477", client: "Walmart - Anhui Light Industries International Co., Ltd.", lastDay: "27-Jul-26", days: 1, inspectors: "Jianing Gao", office: "Beijing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617376561", client: "Walmart - HANGZHOU GUOGUANG TOURING COMMODITY CO., LTD.", lastDay: "27-Jul-26", days: 1, inspectors: "Jiaquan Lin;Star Tao;Niki Liu", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617405613", client: "Gis Holdings Ltd", lastDay: "27-Jul-26", days: 1, inspectors: "Alison Lu", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617413774", client: "INGRAM MICRO MEXICO", lastDay: "27-Jul-26", days: 1, inspectors: "Weiqiang Guan", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617452042", client: "Walmart - ALL COURTESY INTERNATIONAL LIMITED", lastDay: "27-Jul-26", days: 1, inspectors: "Eno Zhao", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617667582", client: "Guadalajara - EXPEDITORS INTERNATIONAL DE MEXICO", lastDay: "27-Jul-26", days: 1, inspectors: "Yuquan Li", office: "Qingdao office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617671733", client: "Guadalajara - EXPEDITORS INTERNATIONAL DE MEXICO", lastDay: "27-Jul-26", days: 1, inspectors: "Sean Xiao;Mingrui Shao;David Dai;Huisheng Duan", office: "Qingdao office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617679821", client: "JAS FORWARDING TENNANT", lastDay: "27-Jul-26", days: 1, inspectors: "Cheng Yang", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617789972", client: "Grupo Acopol", lastDay: "27-Jul-26", days: 1, inspectors: "Xinmin Xu", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617870220", client: "TRAMITES Y LOGISTICA EN COMERCIO EXTERIOR", lastDay: "27-Jul-26", days: 1, inspectors: "Tina Lin", office: "Ningbo office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617874776", client: "Grupo De Intercambio Comercial S.A. De C.V.", lastDay: "27-Jul-26", days: 1, inspectors: "Jiasheng Wang", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2617986065", client: "Bing Global", lastDay: "27-Jul-26", days: 1, inspectors: "Pengyang Jin", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618024265", client: "Wetbuy Comercializacion", lastDay: "27-Jul-26", days: 1, inspectors: "Mike-Lubo Wang;Simba Wang", office: "Guangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618070757", client: "COSTCO MEX- Jiangyin Mingsheng Garment Co., Ltd.", lastDay: "27-Jul-26", days: 1, inspectors: "Davey Gao;Jared Hu;Sheng Zhou", office: "Nanjing Office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618241771", client: "Grupo De Intercambio Comercial S.A. De C.V.", lastDay: "27-Jul-26", days: 1, inspectors: "Kaixin Zhu", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618255381", client: "WALMART - Flair Enterprises Inc.", lastDay: "27-Jul-26", days: 1, inspectors: "Lei Wang;Li Gou;Hao Wang;Cangfeng Wang", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618267069", client: "Grupo Acopol", lastDay: "27-Jul-26", days: 1, inspectors: "Wei Xue", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618270147", client: "COSTCO MEX-Huizhou Yigao Plastic Products Co.,Ltd.", lastDay: "27-Jul-26", days: 1, inspectors: "Fan Xie", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618270452", client: "Grupo Acopol", lastDay: "27-Jul-26", days: 1, inspectors: "Guangdong Hu", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618273069", client: "Grupo Acopol", lastDay: "27-Jul-26", days: 1, inspectors: "Kai Li", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618285489", client: "AUTOZONE 57 MEX - Shandong Liancheng Precision Manufacturing Co.,LTD", lastDay: "27-Jul-26", days: 1, inspectors: "Vivian Wang", office: "Qingdao office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618287109", client: "AUTOZONE 57 MEX - Shandong Liancheng Precision Manufacturing Co.,LTD", lastDay: "27-Jul-26", days: 1, inspectors: "Vivian Wang", office: "Qingdao office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618366853", client: "AUTOZONE 52 MEX - Century Distribution Systems (Shenzhen) Ltd. / Qingdao", lastDay: "27-Jul-26", days: 1, inspectors: "Kaigong Wang", office: "Qingdao office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618367134", client: "AUTOZONE 52 MEX - Century Distribution Systems (Shenzhen) Ltd. / Qingdao", lastDay: "27-Jul-26", days: 1, inspectors: "Kaigong Wang", office: "Qingdao office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618382153", client: "Tecnocent S.A. De C.V.", lastDay: "27-Jul-26", days: 1, inspectors: "Jason Peng", office: "Shenzhen office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618389946", client: "VISA GLOBAL INSPECTIONS", lastDay: "27-Jul-26", days: 1, inspectors: "Yong Chen;Tony Shi", office: "Hangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618393189", client: "Monterrey - Expeditors International de Mexico", lastDay: "27-Jul-26", days: 1, inspectors: "Chang Liu;Andy Zhang", office: "#N/A", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618417755", client: "COSTCO MEX-Hisense (Guangdong) Kitchen & Bath System Co., Ltd.", lastDay: "27-Jul-26", days: 1, inspectors: "Japho Chen", office: "Guangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618454851", client: "Costco Mex - SUPER CRAFT LIMITED", lastDay: "27-Jul-26", days: 1, inspectors: "Yunlong Zhu", office: "Guangzhou office", reason: "", comment: "", responsible: "" },
+  { ref: "Q2618467118", client: "Acopol S.A. De C.V", lastDay: "27-Jul-26", days: 1, inspectors: "Zhi Ma", office: "Hangzhou office", reason: "", comment: "", responsible: "" }
+];
+
+const STORAGE_KEY = "late_report_draft_2026_07_28";
+let filteredOrders = [...ORDERS];
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function escapeJs(str) {
+  return String(str ?? "").replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
+function getDayClass(days) {
+  if (days >= 7) return "orange";
+  if (days >= 3) return "yellow";
+  return "white";
+}
+
+function getDayBadge(days) {
+  const cls = getDayClass(days);
+  const map = { orange: "days-orange", yellow: "days-yellow", white: "days-white" };
+  return `<span class="days-badge ${map[cls]}">${days}</span>`;
+}
+
+function isFilled(order) {
+  return (order.reason || "").trim() !== "";
+}
+
+function getStatusDot(order) {
+  return isFilled(order)
+    ? `<span class="status-dot dot-filled"></span>Filled`
+    : `<span class="status-dot dot-pending"></span>Pending`;
+}
+
+function getResponsibleByReason(reason) {
+  return RESPONSIBLE_MAP[reason] || "";
+}
+
+function renderOfficeOptions() {
+  const sel = document.getElementById("filterOffice");
+  const offices = [...new Set(ORDERS.map(o => (o.office || "").trim()).filter(Boolean))].sort();
+  sel.innerHTML = `<option value="">All Offices</option>` +
+    offices.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = data.map((order, idx) => `
+    <tr class="${isFilled(order) ? 'filled' : ''}">
+      <td>${idx + 1}</td>
+      <td>${escapeHtml(order.ref)}</td>
+      <td>${escapeHtml(order.client)}</td>
+      <td>${escapeHtml(order.lastDay)}</td>
+      <td>${getDayBadge(order.days)}</td>
+      <td>${escapeHtml(order.inspectors)}</td>
+      <td>${escapeHtml(order.office)}</td>
+      <td>
+        <select class="reason-sel" onchange="updateReason('${escapeJs(order.ref)}',this.value)">
+          ${REASON_OPTIONS.map(r => `<option value="${escapeHtml(r)}" ${order.reason === r ? "selected" : ""}>${escapeHtml(r || "Select reason")}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <input class="comment-inp" type="text" value="${escapeHtml(order.comment)}"
+          placeholder="Enter comment..."
+          oninput="updateField('${escapeJs(order.ref)}','comment',this.value)">
+      </td>
+      <td>
+        <input class="responsible-inp" type="text" value="${escapeHtml(order.responsible)}"
+          placeholder="Auto by reason"
+          readonly>
+        <div style="font-size:11px;color:#666;margin-top:4px">${getStatusDot(order)}</div>
+      </td>
+    </tr>
+  `).join("");
+
+  updateStats();
+}
+
+function updateReason(ref, value) {
+  const order = ORDERS.find(o => o.ref === ref);
+  if (!order) return;
+  order.reason = value;
+  order.responsible = getResponsibleByReason(value);
+  saveToLocal();
+  applyFilters();
+}
+
+function updateField(ref, field, value) {
+  const order = ORDERS.find(o => o.ref === ref);
+  if (!order) return;
+  order[field] = value;
+  saveToLocal();
+  applyFilters();
+}
+
+function applyFilters() {
+  const office = document.getElementById("filterOffice").value.trim().toLowerCase();
+  const status = document.getElementById("filterStatus").value.trim().toLowerCase();
+  const dayFilter = document.getElementById("filterDays").value.trim().toLowerCase();
+  const keyword = document.getElementById("searchBox").value.trim().toLowerCase();
+
+  filteredOrders = ORDERS.filter(o => {
+    const officeMatch = !office || (o.office || "").toLowerCase() === office;
+    const statusMatch = !status || (status === "filled" ? isFilled(o) : !isFilled(o));
+    const dayClass = getDayClass(o.days);
+    const dayMatch = !dayFilter || dayClass === dayFilter;
+    const text = `${o.ref} ${o.client} ${o.inspectors} ${o.office}`.toLowerCase();
+    const searchMatch = !keyword || text.includes(keyword);
+    return officeMatch && statusMatch && dayMatch && searchMatch;
+  });
+
+  renderTable(filteredOrders);
+}
+
+function updateStats() {
+  const total = ORDERS.length;
+  const filled = ORDERS.filter(isFilled).length;
+  const pending = total - filled;
+  const orange = ORDERS.filter(o => o.days >= 7).length;
+
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statFilled").textContent = filled;
+  document.getElementById("statPending").textContent = pending;
+  document.getElementById("statOrange").textContent = orange;
+
+  document.getElementById("progressLabel").textContent = `${filled} / ${total} orders filled`;
+  document.getElementById("progressFill").style.width = total ? `${(filled / total) * 100}%` : "0%";
+}
+
+function saveToLocal() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ORDERS));
+}
+
+function loadFromLocal() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const saved = JSON.parse(raw);
+    if (!Array.isArray(saved)) return;
+    for (const item of saved) {
+      const order = ORDERS.find(o => o.ref === item.ref);
+      if (order) {
+        order.reason = item.reason || "";
+        order.comment = item.comment || "";
+        order.responsible = getResponsibleByReason(order.reason);
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load saved draft", e);
+  }
+}
+
+function saveDraft() {
+  saveToLocal();
+  showToast("✓ Draft saved!");
+}
+
+function generateEmailContent() {
+  const filledOrders = ORDERS.filter(isFilled);
+
+  if (!filledOrders.length) {
+    return "No filled orders yet.";
+  }
+
+  let text = "";
+  text += "Subject: Late Report Update - 2026-07-28\n\n";
+  text += "Dear Team,\n\n";
+  text += "Please find below the updated late report information:\n\n";
+
+  filledOrders.forEach((o, i) => {
+    text += `${i + 1}. QIMA Ref.: ${o.ref}\n`;
+    text += `   Client: ${o.client}\n`;
+    text += `   Last Day: ${o.lastDay}\n`;
+    text += `   Days: ${o.days}\n`;
+    text += `   Inspector(s): ${o.inspectors || "-"}\n`;
+    text += `   Office: ${o.office || "-"}\n`;
+    text += `   Reason: ${o.reason || "-"}\n`;
+    text += `   Comment: ${o.comment || "-"}\n`;
+    text += `   Responsible: ${o.responsible || "-"}\n\n`;
+  });
+
+  text += "Best regards,\nITL";
+  return text;
+}
+
+function openSubmitModal() {
+  document.getElementById("emailPreview").textContent = generateEmailContent();
+  document.getElementById("submitModal").classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("submitModal").classList.remove("open");
+}
+
+function copyEmail() {
+  const txt = document.getElementById("emailPreview").textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    showToast("✓ Copied to clipboard!");
+  }).catch(() => {
+    showToast("✗ Copy failed");
+  });
+}
+
+function downloadFilledJson() {
+  const filledOrders = ORDERS.filter(isFilled);
+  const blob = new Blob([JSON.stringify(filledOrders, null, 2)], { type: "application/json;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "late-report-filled-2026-07-28.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function showToast(msg) {
+  const toast = document.getElementById("copiedToast");
+  toast.textContent = msg;
+  toast.style.display = "block";
+  setTimeout(() => toast.style.display = "none", 1800);
+}
+
+function setHeaderDate() {
+  document.getElementById("headerDate").textContent = "2026-07-28";
+}
+
+function init() {
+  setHeaderDate();
+  renderOfficeOptions();
+  loadFromLocal();
+  applyFilters();
+}
+
+window.onclick = function(e) {
+  const modal = document.getElementById("submitModal");
+  if (e.target === modal) closeModal();
+};
+
+init();
+</script>
+
+</body>
+</html>
